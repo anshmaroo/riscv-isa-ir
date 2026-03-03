@@ -5,7 +5,7 @@ import ctypes
 @dataclass
 class ArchState:
     mem: dict[ctypes.c_uint32, ctypes.c_uint8]
-    regfile: list[ctypes.c_uint32]
+    regfile: list[ctypes.c_uint64]
     tensor_regfile: list[list[ctypes.c_uint32]]
     pc: ctypes.c_uint32
     npc: ctypes.c_uint32
