@@ -38,14 +38,13 @@ def has_register_write_rd(tree: ast.Module):
     for assignment in assignments:
         match assignment:
             case ast.Assign(
-                targets=[ast.Subscript(
-                    value=ast.Attribute(
-                        value=ast.Name(id="state"),
-                        attr="regfile"
-                    ),
-                    slice=ast.Name(id="rd"),
-                    ctx=ast.Store()
-                )]
+                targets=[
+                    ast.Subscript(
+                        value=ast.Attribute(value=ast.Name(id="state"), attr="regfile"),
+                        slice=ast.Name(id="rd"),
+                        ctx=ast.Store(),
+                    )
+                ]
             ):
                 return True
     return False
@@ -56,12 +55,9 @@ def has_register_read_rs1(tree: ast.Module):
     for subscript in subscripts:
         match subscript:
             case ast.Subscript(
-                value=ast.Attribute(
-                    value=ast.Name(id="state"),
-                    attr="regfile"
-                ),
+                value=ast.Attribute(value=ast.Name(id="state"), attr="regfile"),
                 slice=ast.Name(id="rs1"),
-                ctx=ast.Load()
+                ctx=ast.Load(),
             ):
                 return "OP1_RS1"
     return "OP1_X"
@@ -72,24 +68,69 @@ def has_register_read_rs2(tree: ast.Module):
     for subscript in subscripts:
         match subscript:
             case ast.Subscript(
-                value=ast.Attribute(
-                    value=ast.Name(id="state"),
-                    attr="regfile"
-                ),
+                value=ast.Attribute(value=ast.Name(id="state"), attr="regfile"),
                 slice=ast.Name(id="rs2"),
-                ctx=ast.Load()
+                ctx=ast.Load(),
             ):
                 return "OP2_RS2"
     return "OP2_X"
 
 
+def has_register_read_mrs1(tree: ast.Module):
+    subscripts = extract_subscripts(tree)
+    for subscript in subscripts:
+        match subscript:
+            case ast.Subscript(
+                value=ast.Attribute(value=ast.Name(id="state"), attr="tensor_regfile"),
+                slice=ast.Name(id="mrs1"),
+                ctx=ast.Load(),
+            ):
+                return "OP1_MRS1"
+    return "OP1_X"
+
+
+def has_register_read_mrs2(tree: ast.Module):
+    subscripts = extract_subscripts(tree)
+    for subscript in subscripts:
+        match subscript:
+            case ast.Subscript(
+                value=ast.Attribute(value=ast.Name(id="state"), attr="tensor_regfile"),
+                slice=ast.Name(id="mrs2"),
+                ctx=ast.Load(),
+            ):
+                return "OP2_MRS2"
+    return "OP2_X"
+
+
+# is there a register assignment in the body?
+def has_register_write_mrd(tree: ast.Module):
+    assignments = extract_assignments(tree)
+    for assignment in assignments:
+        match assignment:
+            case ast.Assign(
+                targets=[
+                    ast.Subscript(
+                        value=ast.Attribute(
+                            value=ast.Name(id="state"), attr="tensor_regfile"
+                        ),
+                        slice=ast.Name(id="mrd"),
+                        ctx=ast.Store(),
+                    )
+                ]
+            ):
+                return True
+    return False
+
+
 def test_register_assignment(tree: ast.Module):
     assignments = extract_assignments(tree)
     for assignment in assignments:
-        if len(assignment.targets) == 1 \
-                and isinstance(assignment.targets[0], ast.Subscript) \
-                and isinstance(assignment.targets[0].value, ast.Name) \
-                and assignment.targets[0].value.id == "regfile":
+        if (
+            len(assignment.targets) == 1
+            and isinstance(assignment.targets[0], ast.Subscript)
+            and isinstance(assignment.targets[0].value, ast.Name)
+            and assignment.targets[0].value.id == "regfile"
+        ):
             print(assignment.value)
             return True
     print("0")
@@ -99,9 +140,15 @@ def test_register_assignment(tree: ast.Module):
 def has_pc_assignment(tree: ast.Module):
     assignments = extract_assignments(tree)
     for assignment in assignments:
-        if len(assignment.targets) == 1 \
-                and isinstance(assignment.targets[0], ast.Name) \
-                and assignment.targets[0].id == "pc":
+        if (
+            len(assignment.targets) == 1
+            and isinstance(
+                assignment.targets[0], ast.Attribute
+            )
+            and isinstance(assignment.targets[0].value, ast.Name)
+            and assignment.targets[0].value.id == "state"
+            and assignment.targets[0].attr == "pc"
+        ):
             return True
     return False
 

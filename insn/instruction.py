@@ -1,50 +1,72 @@
 from typing import Callable
 import inspect
 import ast
+import passes.functional_unit
 import passes.register
 import passes.mem
 
-def instr(fn: Callable):
-    src = inspect.getsource(fn)
-    tree = ast.parse(src)
 
-    # extract the function definition
-    func_def = next(node for node in ast.walk(tree)
-                    if isinstance(node, ast.FunctionDef))
-    func_name = func_def.name
-    # args = [(arg.arg, arg.annotation.id) for arg in func_def.args.args]
-    print(f"--- running on {func_name.upper()} ---")
+def instr(fn: Callable = None, *, name=None, instruction_type=None):
+    def _run(fn):
+        src = inspect.getsource(fn)
+        tree = ast.parse(src)
 
-    # convert the AST to a gast AST
-    # duc = beniget.DefUseChains()
-    # duc.visit(tree)
+        # extract the function definition
+        func_def = next(
+            node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+        )
+        print(f"--- running on {name.upper() or func_name.upper()} ---")
 
-    # print(ast.dump(tree, indent=2))
+        # Valid
+        valid = passes.register.is_valid_instruction(tree)
+        print(f"Valid: {valid}")
 
-    # Valid
-    valid = passes.register.is_valid_instruction(tree)
-    print(f"Valid: {valid}")
+        # BR_TYPE
+        br_type = passes.register.test_conditional_assignment(tree)
+        print(f"BR_TYPE: {br_type}")
 
-    # BR_TYPE
-    br_type = passes.register.test_conditional_assignment(tree)
-    print(f"BR_TYPE: {br_type}")
+        # has_register_read_rs1
+        rs1 = passes.register.has_register_read_rs1(tree)
+        print(f"has_register_read_rs1: {rs1}")
 
-    # has_register_read_rs1
-    rs1 = passes.register.has_register_read_rs1(tree)
-    print(f"has_register_read_rs1: {rs1}")
+        # has_register_read_rs2
+        rs2 = passes.register.has_register_read_rs2(tree)
+        print(f"has_register_read_rs2: {rs2}")
 
-    # has_register_read_rs2
-    rs2 = passes.register.has_register_read_rs2(tree)
-    print(f"has_register_read_rs2: {rs2}")
+        # has_register_write_rd
+        rd = passes.register.has_register_write_rd(tree)
+        print(f"has_register_write_rd: {rd}")
 
-    # has_register_write_rd
-    rd = passes.register.has_register_write_rd(tree)
-    print(f"has_register_write_rd: {rd}")
+        # has_register_read_mrs1
+        mrs1 = passes.register.has_register_read_mrs1(tree)
+        print(f"has_register_read_mrs1: {mrs1}")
 
-    # get_mem_read_size
-    mem_read_size = passes.mem.get_mem_read_size(tree)
-    print(f"get_mem_read_size: {mem_read_size}")
+        # has_register_read_mrs2
+        mrs2 = passes.register.has_register_read_mrs2(tree)
+        print(f"has_register_read_mrs2: {mrs2}")
 
-    # get_mem_write_size
-    mem_write_size = passes.mem.get_mem_write_size(tree)
-    print(f"get_mem_write_size: {mem_write_size}")
+        # has_register_write_mrd
+        mrd = passes.register.has_register_write_mrd(tree)
+        print(f"has_register_write_mrd: {mrd}")
+
+        # has_pc_update
+        pc = passes.register.has_pc_assignment(tree)
+        print(f"has_pc_assignment: {pc}")
+
+        # get_mem_read_size
+        mem_read_size = passes.mem.get_mem_read_size(tree)
+        print(f"get_mem_read_size: {mem_read_size}")
+
+        # get_mem_write_size
+        mem_write_size = passes.mem.get_mem_write_size(tree)
+        print(f"get_mem_write_size: {mem_write_size}")
+
+        functional_unit = passes.functional_unit.functional_unit(tree)
+        print(f"functional unit needed: {functional_unit}")
+        print()
+        return fn
+
+    if fn is not None:
+        return _run(fn)  # @instr bare
+    else:
+        return _run  # @instr(name=..., instruction_type=...)
