@@ -61,8 +61,11 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
         mem_write_size = passes.mem.get_mem_write_size(tree)
         print(f"get_mem_write_size: {mem_write_size}")
 
-        functional_unit = passes.functional_unit.functional_unit(tree)
-        print(f"functional unit needed: {functional_unit}")
+        instruction_type = passes.functional_unit.instruction_type(tree)
+        print(f"functional unit needed: {instruction_type}")
+
+        alu_op = passes.functional_unit.scalar_alu_op(tree)
+        print(f"operator: {type(alu_op).__name__}")
         print()
         return fn
 

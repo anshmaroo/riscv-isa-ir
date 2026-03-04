@@ -22,7 +22,6 @@ def matmul_mxu_1(mrd: int, mrs1: int, mrs2: int, state: ArchState):
     state.tensor_regfile[mrd] = state.tensor_regfile[mrs1] @ state.tensor_regfile[mrs2]
 
 
-
 # scalar isa
 @instr(name="add", instruction_type=InstructionType.SCALAR)
 def add(rd: int, rs1: int, rs2: int, state: ArchState):
