@@ -66,6 +66,9 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
 
         alu_op = passes.functional_unit.scalar_alu_op(tree)
         print(f"scalar ALU op: {type(alu_op).__name__}")
+
+        vpu_op = passes.functional_unit.vector_op(tree)
+        print(f"VPU op: {vpu_op}")
         print()
         return fn
 
