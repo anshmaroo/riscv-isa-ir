@@ -22,6 +22,13 @@ def scalar_alu_op(tree: ast.Module) -> ast.operator():
     for assignment in assignments:
         match assignment:
             case ast.Assign(
+				targets=[
+                    ast.Subscript(
+                        value=ast.Attribute(value=ast.Name(id="state"), attr="regfile"),
+                        slice=ast.Name(id="rd"),
+                        ctx=ast.Store(),
+                    )
+                ],
                 value=ast.BinOp(op=operator)
             ):
                 return operator
