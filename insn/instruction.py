@@ -1,3 +1,4 @@
+from types import NoneType
 from typing import Callable
 import inspect
 import ast
@@ -53,19 +54,24 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
         pc = passes.register.has_pc_assignment(tree)
         print(f"has_pc_assignment: {pc}")
 
-        # get_mem_read_size
-        mem_read_size = passes.mem.get_mem_read_size(tree)
-        print(f"get_mem_read_size: {mem_read_size}")
+        # # get_mem_read_size
+        # mem_read_size = passes.mem.get_mem_read_size(tree)
+        # print(f"get_mem_read_size: {mem_read_size}")
 
-        # get_mem_write_size
-        mem_write_size = passes.mem.get_mem_write_size(tree)
-        print(f"get_mem_write_size: {mem_write_size}")
+        # # get_mem_write_size
+        # mem_write_size = passes.mem.get_mem_write_size(tree)
+        # print(f"get_mem_write_size: {mem_write_size}")
 
         instruction_type = passes.functional_unit.instruction_type(tree)
         print(f"functional unit needed: {instruction_type}")
 
         alu_op = passes.functional_unit.scalar_alu_op(tree)
-        print(f"scalar ALU op: {type(alu_op).__name__}")
+        match type(alu_op).__name__:
+            case "NoneType":
+                alu_op = "X"
+            case _:
+                alu_op = type(alu_op).__name__.upper()
+        print(f"scalar ALU op: ALU_OP_{alu_op}")
 
         vpu_op = passes.functional_unit.vector_op(tree)
         print(f"VPU op: {vpu_op}")

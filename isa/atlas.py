@@ -1,4 +1,4 @@
-from insn.instruction import instr
+from insn.table import instr
 from insn.operations import ArchState, load, zero_extend
 from math import sin, cos, tanh, exp2, exp, log2, sqrt
 
@@ -26,18 +26,18 @@ def matmul_mxu_1(mrd: int, mrs1: int, mrs2: int, state: ArchState):
 # vector isa
 @instr(name="vadd", instruction_type=InstructionType.VECTOR)
 def vadd(mrd: int, mrs1: int, mrs2: int, state: ArchState):
-    state.tensor_regfile[mrd] = state = state.tensor_regfile[mrs1] + state.tensor_regfile[mrs2]
+    state.tensor_regfile[mrd] = state.tensor_regfile[mrs1] + state.tensor_regfile[mrs2]
 
 
 @instr(name="vsub", instruction_type=InstructionType.VECTOR)
 def vsub(mrd: int, mrs1: int, mrs2: int, state: ArchState):
-    state.tensor_regfile[mrd] = state = state.tensor_regfile[mrs1] - state.tensor_regfile[mrs2]
+    state.tensor_regfile[mrd] = state.tensor_regfile[mrs1] - state.tensor_regfile[mrs2]
 
 
 @instr(name="vmul", instruction_type=InstructionType.VECTOR)
 def vmul(mrd: int, mrs1: int, mrs2: int, state: ArchState):
-    state.tensor_regfile[mrd] = state = state.tensor_regfile[mrs1] * state.tensor_regfile[mrs2]
-    
+    state.tensor_regfile[mrd] = state.tensor_regfile[mrs1] * state.tensor_regfile[mrs2]
+
 
 @instr(name="vsqrt", instruction_type=InstructionType.VECTOR)
 def vsqrt(mrd: int, mrs1: int, state: ArchState):
@@ -52,6 +52,7 @@ def vsqrt(mrd: int, mrs1: int, state: ArchState):
 @instr(name="vexp", instruction_type=InstructionType.VECTOR)
 def vexp(mrd: int, mrs1: int, state: ArchState) -> None:
     state.tensor_regfile[mrd] = exp(state.tensor_regfile[mrs1])
+
 
 @instr(name="vlog2", instruction_type=InstructionType.VECTOR)
 def vlog2(mrd: int, mrs1: int, state: ArchState) -> None:
@@ -165,3 +166,11 @@ def bltu(rs1: int, rs2: int, bimm12: int, state: ArchState):
 @instr(name="jal", instruction_type=InstructionType.SCALAR)
 def blt(rs1: int, rs2: int, bimm20: int, state: ArchState):
     state.pc = state.pc + bimm20
+
+
+@instr(name="dma.load.m", instruction_type=InstructionType.DMA)
+def dma_load_m(mrd: int, base: int, size: int, state: ArchState) -> None:
+    """
+    DMA load from memory to matrix registers.
+    """
+    state.tensor_regfile[mrd] = state.mem[base : base + size]
