@@ -18,14 +18,21 @@ def _generate_chisel_table():
     col_headers = [
         "valid",
         "br_type",
-        "rs1",
-        "rs2",
-        "rd",
-        "mrs1",
-        "mrs2",
-        "mrd",
-        "pc",
-        "instr_type",
+        "src1",
+        "src2",
+        "dst",
+        "msrc1",
+        "msrc2",
+        "mdst",
+        "mem_read",
+        "mem_write",
+        "wb", "pc",
+        "mxu_0_valid",
+        "mxu_1_valid",
+        "scalar_valid",
+        "vpu_valid",
+        "xlu_valid",
+        "dma_valid",
         "alu_op",
         "vpu_op",
     ]
@@ -76,12 +83,38 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
         mrs1 = passes.register.has_register_read_mrs1(tree)
         mrs2 = passes.register.has_register_read_mrs2(tree)
         mrd = passes.register.has_register_write_mrd(tree)
+        wb = passes.register.has_wb_write(tree)
 
         # PC update
         pc = passes.register.has_pc_assignment(tree)
 
         # Functional unit
         instr_type_val = passes.functional_unit.instruction_type(tree)
+        mxu_0_valid = False
+        mxu_1_valid = False
+        scalar_valid = False
+        vpu_valid = False
+        dma_valid = False
+        xlu_valid = False
+
+        match str(instr_type_val):
+            case "InstructionType.MATRIX_SYSTOLIC":
+                mxu_0_valid = True
+
+            case "InstructionType.MATRIX_IPT":
+                mxu_1_valid = True
+
+            case "InstructionType.SCALAR":
+                scalar_valid = True
+
+            case "InstructionType.VECTOR":
+                vpu_valid = True
+
+            case "InstructionType.DMA":
+                dma_valid = True
+
+            case "InstructionType.TRANSPOSE":
+                xlu_valid = True
 
         # ALU op
         alu_op = passes.functional_unit.scalar_alu_op(tree)
@@ -93,6 +126,10 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
 
         # VPU op
         vpu_op = passes.functional_unit.vector_op(tree)
+
+        # mem read/write
+        mem_read = passes.mem.check_mem_read(tree)
+        mem_write = passes.mem.check_mem_write(tree)
 
         def _bool(v) -> str:
             if v is True:
@@ -106,18 +143,26 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
                 "name": instr_name,
                 "valid": _bool(valid),
                 "br_type": str(br_type) if br_type is not None else "BR_X",
-                "rs1": _bool(rs1),
-                "rs2": _bool(rs2),
-                "rd": _bool(rd),
-                "mrs1": _bool(mrs1),
-                "mrs2": _bool(mrs2),
-                "mrd": _bool(mrd),
+                "src1": _bool(rs1),
+                "src2": _bool(rs2),
+                "dst": _bool(rd),
+                "msrc1": _bool(mrs1),
+                "msrc2": _bool(mrs2),
+                "mdst": _bool(mrd),
+                "mem_read": _bool(mem_read),
+                "mem_write": _bool(mem_write),
+                "wb": _bool(wb),
                 "pc": _bool(pc),
-                "instr_type": (
-                    str(instr_type_val) if instr_type_val is not None else "X"
-                ),
+                "mxu_0_valid": _bool(mxu_0_valid),
+                "mxu_1_valid": _bool(mxu_1_valid),
+                "scalar_valid": _bool(scalar_valid),
+                "vpu_valid": _bool(vpu_valid),
+                "xlu_valid": _bool(xlu_valid),
+                "dma_valid": _bool(dma_valid),
                 "alu_op": alu_op_str,
-                "vpu_op": ("VPU_OP_" + str(vpu_op).upper()) if vpu_op is not None else "VPU_X",
+                "vpu_op": (
+                    ("VPU_OP_" + str(vpu_op).upper()) if vpu_op is not None else "VPU_X"
+                ),
             }
         )
 
@@ -127,6 +172,3 @@ def instr(fn: Callable = None, *, name=None, instruction_type=None):
         return _run(fn)
     else:
         return _run
-
-
-

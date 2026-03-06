@@ -1,6 +1,30 @@
+from ctypes import c_uint32
+
+from cv2 import rotate
+
 from insn.table import instr
 from insn.operations import ArchState, load, zero_extend
 from math import sin, cos, tanh, exp2, exp, log2, sqrt
+
+
+def rec():
+    return None
+
+
+def reduce():
+    return None
+
+
+def rot_reduce():
+    return None
+
+
+def trpose_h():
+    return None
+
+
+def trpose_l():
+    return None
 
 
 class InstructionType:
@@ -10,6 +34,7 @@ class InstructionType:
     MATRIX_SYSTOLIC = 3
     DMA = 4
     BARRIER = 5
+    TRANSPOSE = 6
 
 
 # matrix isa
@@ -44,9 +69,9 @@ def vsqrt(mrd: int, mrs1: int, state: ArchState):
     state.tensor_regfile[mrd] = sqrt(state.tensor_regfile[mrs1])
 
 
-# @instr(name="vrcp", instruction_type=InstructionType.VECTOR)
-# def vrcp(mrd: int, mrs1: int, state: ArchState):
-#     state.tensor_regfile[mrd] = state = 1 / state.tensor_regfile[mrs1]
+@instr(name="vrcp", instruction_type=InstructionType.VECTOR)
+def vrcp(mrd: int, mrs1: int, state: ArchState):
+    state.tensor_regfile[mrd] = rec(state.tensor_regfile[mrs1])
 
 
 @instr(name="vexp", instruction_type=InstructionType.VECTOR)
@@ -77,6 +102,35 @@ def vcos(mrd: int, mrs1: int, state: ArchState) -> None:
 @instr(name="vtanh", instruction_type=InstructionType.VECTOR)
 def vtanh(mrd: int, mrs1: int, state: ArchState) -> None:
     state.tensor_regfile[mrd] = tanh(state.tensor_regfile[mrs1])
+
+
+@instr(name="vreduce.sum", instruction_type=InstructionType.VECTOR)
+def vreduce_sum(mrd: int, mrs1: int, state: ArchState) -> None:
+    """Reduce sum over second-to-last (across columns) dimension. For (rows, cols) in, gives (1, cols) broadcast."""
+    state.tensor_regfile[mrd] = reduce(state.tensor_regfile[mrs1])
+
+
+@instr(name="vrot.reduce.sum", instruction_type=InstructionType.VECTOR)
+def vrot_reduce_sum(mrd: int, mrs1: int, state: ArchState) -> None:
+    """Reduce sum over last (across rows) dimension. For (rows, cols) in, gives (rows, 1) broadcast."""
+    state.tensor_regfile[mrd] = rot_reduce(state.tensor_regfile[mrs1])
+
+
+"""
+Transpose operations
+"""
+
+
+@instr(name="vtrpose.h", instruction_type=InstructionType.TRANSPOSE)
+def vtrpose_h(mrd: int, mrs1: int, state: ArchState) -> None:
+    """Transpose upper half: block = x[:, 0:half], write (cols, rows) with first half rows = block.T. Use with vtrpose.l + vadd for full transpose."""
+    state.tensor_regfile[mrd] = trpose_h(state.tensor_regfile[mrs1])
+
+
+@instr(name="vtrpose.l", instruction_type=InstructionType.TRANSPOSE)
+def vtrpose_l(mrd: int, mrs1: int, state: ArchState) -> None:
+    """Transpose lower half: block = x[:, half:], write (cols, rows) with second half rows = block.T. Use with vtrpose.h + vadd for full transpose."""
+    state.tensor_regfile[mrd] = trpose_l(state.tensor_regfile[mrs1])
 
 
 @instr(name="mv.mm", instruction_type=InstructionType.VECTOR)
@@ -174,3 +228,11 @@ def dma_load_m(mrd: int, base: int, size: int, state: ArchState) -> None:
     DMA load from memory to matrix registers.
     """
     state.tensor_regfile[mrd] = state.mem[base : base + size]
+
+
+@instr(name="dma.load.wb", instruction_type=InstructionType.DMA)
+def dma_load_m(wb: int, base: int, size: int, state: ArchState) -> None:
+    """
+    DMA load from memory to weight buffer.
+    """
+    state.weight_buffers[wb] = state.mem[base : base + size]

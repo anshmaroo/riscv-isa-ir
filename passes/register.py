@@ -122,6 +122,26 @@ def has_register_write_mrd(tree: ast.Module):
     return False
 
 
+# is there a weight buffer assignment in the body?
+def has_wb_write(tree: ast.Module):
+    assignments = extract_assignments(tree)
+    for assignment in assignments:
+        match assignment:
+            case ast.Assign(
+                targets=[
+                    ast.Subscript(
+                        value=ast.Attribute(
+                            value=ast.Name(id="state"), attr="weight_buffers"
+                        ),
+                        slice=ast.Name(id="wb"),
+                        ctx=ast.Store(),
+                    )
+                ]
+            ):
+                return True
+    return False
+
+
 def test_register_assignment(tree: ast.Module):
     assignments = extract_assignments(tree)
     for assignment in assignments:
@@ -142,9 +162,7 @@ def has_pc_assignment(tree: ast.Module):
     for assignment in assignments:
         if (
             len(assignment.targets) == 1
-            and isinstance(
-                assignment.targets[0], ast.Attribute
-            )
+            and isinstance(assignment.targets[0], ast.Attribute)
             and isinstance(assignment.targets[0].value, ast.Name)
             and assignment.targets[0].value.id == "state"
             and assignment.targets[0].attr == "pc"
